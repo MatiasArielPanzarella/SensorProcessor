@@ -5,10 +5,6 @@ using SensorProcessor.Infrastructure.Readers;
 using SensorProcessor.Infrastructure.Writers;
 
 Console.WriteLine("=== Sensor Processor ===");
-
-// =====================================================
-// INPUT 1: archivo sensors.json O carpeta
-// =====================================================
 Console.WriteLine("Ingrese la ruta del archivo sensors.json o la carpeta que lo contiene:");
 var input = Console.ReadLine()?.Trim().Trim('"');
 
@@ -43,9 +39,6 @@ else
     return;
 }
 
-// =====================================================
-// INPUT 2: formatos de salida
-// =====================================================
 Console.WriteLine("Ingrese los formatos de salida (csv, xml o csv,xml):");
 var formatInput = Console.ReadLine()?.ToLowerInvariant();
 
@@ -95,20 +88,9 @@ foreach (var format in formats)
     }
 }
 
-// =====================================================
-// Infraestructura
-// =====================================================
 var reader = new JsonSensorReader();
 var useCase = new ProcessSensorsUseCase(reader, outputs);
-
-// =====================================================
-// Ejecutar
-// =====================================================
 var stats = await useCase.ExecuteAsync(inputPath);
-
-// =====================================================
-// statistics.json
-// =====================================================
 var statsPath = Path.Combine(basePath, "statistics.json");
 
 var statsJson = JsonSerializer.Serialize(
@@ -116,10 +98,6 @@ var statsJson = JsonSerializer.Serialize(
     new JsonSerializerOptions { WriteIndented = true });
 
 await File.WriteAllTextAsync(statsPath, statsJson);
-
-// =====================================================
-// Output consola
-// =====================================================
 Console.WriteLine();
 Console.WriteLine("=== Estadísticas ===");
 Console.WriteLine($"Sensor con mayor valor: {stats.SensorMaxValueId}");

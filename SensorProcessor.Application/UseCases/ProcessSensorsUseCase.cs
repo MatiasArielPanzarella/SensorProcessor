@@ -22,15 +22,11 @@ public sealed class ProcessSensorsUseCase
         string inputPath,
         CancellationToken ct = default)
     {
-        // 🔥 un channel por writer (fan-out real)
         var channels = _outputs.Keys.ToDictionary(
             w => w,
             _ => Channel.CreateUnbounded<SensorDto>()
         );
 
-        // =========================
-        // Estadísticas (streaming)
-        // =========================
         decimal totalValue = 0;
         int count = 0;
 
@@ -40,9 +36,6 @@ public sealed class ProcessSensorsUseCase
         var valueByZone = new Dictionary<string, (decimal sum, int count)>();
         var activeByZone = new Dictionary<string, int>();
 
-        // =========================
-        // Arrancamos writers
-        // =========================
         var writerTasks = channels.Select(kv =>
             kv.Key.WriteAsync(
                 kv.Value.Reader.ReadAllAsync(ct),
@@ -51,12 +44,8 @@ public sealed class ProcessSensorsUseCase
             )
         );
 
-        // =========================
-        // PRODUCER
-        // =========================
         await foreach (var dto in _reader.ReadAsync(inputPath, ct))
         {
-            // métricas globales
             totalValue += dto.Value;
             count++;
 
@@ -66,7 +55,6 @@ public sealed class ProcessSensorsUseCase
                 maxSensorId = dto.Id;
             }
 
-            // métricas por zona
             if (!valueByZone.TryGetValue(dto.Zone, out var acc))
                 acc = (0, 0);
 
@@ -78,24 +66,16 @@ public sealed class ProcessSensorsUseCase
                     activeByZone.GetValueOrDefault(dto.Zone) + 1;
             }
 
-            // 🔥 broadcast a TODOS los writers
             foreach (var ch in channels.Values)
             {
                 await ch.Writer.WriteAsync(dto, ct);
             }
         }
 
-        // =========================
-        // Cierre ordenado
-        // =========================
         foreach (var ch in channels.Values)
             ch.Writer.Complete();
 
         await Task.WhenAll(writerTasks);
-
-        // =========================
-        // Resultado final
-        // =========================
         return new SensorStatistics
         {
             SensorMaxValueId = maxSensorId,
