@@ -10,28 +10,30 @@ public sealed class XmlSensorWriter : ISensorWriter
     public async Task WriteAsync(
         IAsyncEnumerable<SensorDto> sensors,
         string outputPath,
-        CancellationToken ct = default)
+        CancellationToken ct = default)//Uso default para no obligar al consumidor del método a manejar cancelación si no la necesita
     {
+        //liberacion de recursos asincrona para FileStream y XmlWriter
         await using var stream = new FileStream(
             outputPath,
             FileMode.Create,
             FileAccess.Write,
-            FileShare.None,
+            FileShare.None,//evita corrupciones en el proceso de escritura. No hay concurrencia aca.
             bufferSize: 4096,
-            useAsync: true);
+            useAsync: true); //habilita operaciones asincronas en el stream Le dice a .NET: “Este stream se va a usar con async/ await”. Optimiza I/ O no bloqueante
 
         using var writer = XmlWriter.Create(stream, new XmlWriterSettings
         {
-            Async = true,
+            Async = true, //habilita usar WriteStartDocumentAsync, WriteStartElementAsync, etc sino se produce excepcion en runtime
             Indent = true,
             Encoding = Encoding.UTF8
         });
 
-        await writer.WriteStartDocumentAsync();
-        await writer.WriteStartElementAsync(null, "Sensors", null);
+        await writer.WriteStartDocumentAsync(); //<?xml version="1.0" encoding="utf-8"?> header del archivo
 
-        await foreach (var s in sensors.WithCancellation(ct))
-        {
+        await writer.WriteStartElementAsync(null, "Sensors", null);//<Sensors> comienza nodo raíz
+
+        await foreach (var s in sensors.WithCancellation(ct)) // usado cuando IAsyncEnumerable<T>. No estan todos los elementos de la lista en memoria sino que se van cargando uno a uno ("Dame el próximo sensor… espero… listo, escribo… dame el siguiente…")
+        { //el token puede cancelar la iteracion y no bloquea como cuando se leen listas con un foreach
             await writer.WriteStartElementAsync(null, "Sensor", null);
 
             await writer.WriteElementStringAsync(null, "Index", null, s.Index.ToString());
@@ -44,10 +46,10 @@ public sealed class XmlSensorWriter : ISensorWriter
                 null,
                 s.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
-            await writer.WriteEndElementAsync(); // Sensor
+            await writer.WriteEndElementAsync(); 
         }
 
-        await writer.WriteEndElementAsync(); // Sensors
-        await writer.WriteEndDocumentAsync();
+        await writer.WriteEndElementAsync(); // cierra el último elemento abierto, </Sensors> finaliza nodo raiz
+        await writer.WriteEndDocumentAsync(); // finaliza el documento completo cerrando todas las etiquetas pendientes
     }
 }

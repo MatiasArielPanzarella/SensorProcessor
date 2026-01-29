@@ -40,7 +40,7 @@ else
 }
 
 Console.WriteLine("Ingrese los formatos de salida (csv, xml o csv,xml):");
-var formatInput = Console.ReadLine()?.ToLowerInvariant();
+var formatInput = Console.ReadLine()?.ToLowerInvariant();//Convierte un string a minúsculas para evitar problemas de mayúsculas/minúsculas al comparar
 
 if (string.IsNullOrWhiteSpace(formatInput))
 {
@@ -49,10 +49,10 @@ if (string.IsNullOrWhiteSpace(formatInput))
 }
 
 var formats = formatInput
-    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)//spliteo el string separado por comas en un array removiendo entradas vacías y espacios en blanco
     .Distinct();
 
-var outputs = new Dictionary<ISensorWriter, string>();
+var outputs = new Dictionary<ISensorWriter, string>();//Diccionario para mapear cada escritor con su path de salida
 
 foreach (var format in formats)
 {
@@ -67,7 +67,7 @@ foreach (var format in formats)
             else if (Directory.Exists(csvPath))
                 csvPath = Path.Combine(csvPath, "sensors.csv");
 
-            outputs.Add(new CsvSensorWriter(), csvPath);
+            outputs.Add(new CsvSensorWriter(), csvPath);//Agrega el escritor CSV y su path al diccionario
             break;
 
         case "xml":
@@ -79,7 +79,7 @@ foreach (var format in formats)
             else if (Directory.Exists(xmlPath))
                 xmlPath = Path.Combine(xmlPath, "sensors.xml");
 
-            outputs.Add(new XmlSensorWriter(), xmlPath);
+            outputs.Add(new XmlSensorWriter(), xmlPath);//Agrega el escritor XML y su path al diccionario
             break;
 
         default:
@@ -88,14 +88,14 @@ foreach (var format in formats)
     }
 }
 
-var reader = new JsonSensorReader();
-var useCase = new ProcessSensorsUseCase(reader, outputs);
-var stats = await useCase.ExecuteAsync(inputPath);
+var reader = new JsonSensorReader();//Crea el lector JSON
+var useCase = new ProcessSensorsUseCase(reader, outputs);//Crea el caso de uso con el lector y los escritores configurados por parte del usuario
+var stats = await useCase.ExecuteAsync(inputPath);//Ejecuta el procesamiento y obtiene las estadísticas
 var statsPath = Path.Combine(basePath, "statistics.json");
 
 var statsJson = JsonSerializer.Serialize(
     stats,
-    new JsonSerializerOptions { WriteIndented = true });
+    new JsonSerializerOptions { WriteIndented = true });//Serializa las estadísticas a JSON con indentación (uso de espacios o tabs para mostrar la estructura del código o de un archivo) para mejor legibilidad
 
 await File.WriteAllTextAsync(statsPath, statsJson);
 Console.WriteLine();
