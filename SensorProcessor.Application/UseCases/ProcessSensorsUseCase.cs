@@ -33,7 +33,8 @@ public sealed class ProcessSensorsUseCase
             w => w,
             _ => Channel.CreateUnbounded<SensorDto>() //crea una cola asincrónica sin límite para comunicar productores y consumidores de manera thread-safe
         );
-
+        //Channels esta a partir de net core 3 y para net standard 2.1 en adelante asegura compatibilidad.
+        //siendo mejor que implementaciones como lock, semaforos, etc.
 
         decimal totalValue = 0; //suma de todos los valores
         int count = 0; //contador de sensores procesados
@@ -87,7 +88,7 @@ public sealed class ProcessSensorsUseCase
         foreach (var ch in channels.Values)
             ch.Writer.Complete();
 
-        await Task.WhenAll(writerTasks);
+        await Task.WhenAll(writerTasks);//espera a que todas las tareas de escritura terminen
         return new SensorStatistics
         {
             SensorMaxValueId = maxSensorId,
