@@ -10,7 +10,7 @@ namespace SensorProcessor.Application.UseCases;
 - El valor medio por zona.
 - Cantidad de de sensores activos por zona.
  */
-public sealed class ProcessSensorsUseCase
+public sealed class ProcessSensorsUseCase //sealed porque es un caso de uso..no deseo que otro la herede. Es un caso particular de la aplicación.
 {
     private readonly ISensorReader _reader;
     private readonly Dictionary<ISensorWriter, string> _outputs;

@@ -6,7 +6,7 @@ using SensorProcessor.Infrastructure.Writers;
 
 Console.WriteLine("=== Sensor Processor ===");
 Console.WriteLine("Ingrese la ruta del archivo sensors.json o la carpeta que lo contiene:");
-var input = Console.ReadLine()?.Trim().Trim('"');
+var input = Console.ReadLine()?.Trim().Trim('"');//Leo una línea de consola de forma segura, eliminando espacios y comillas externas para normalizar el input.
 
 if (string.IsNullOrWhiteSpace(input))
 {
@@ -17,10 +17,14 @@ if (string.IsNullOrWhiteSpace(input))
 string basePath;
 string inputPath;
 
+/* el siguiente bloque de codigo interpreta el input permitiendo pasar tanto un archivo como una 
+ * carpeta. Valida la existencia, arma las rutas correspondientes y corta la ejecución de 
+ * forma temprana con mensajes claros si el input es inválido
+ */
 if (File.Exists(input))
 {
     inputPath = input;
-    basePath = Path.GetDirectoryName(input)!;
+    basePath = Path.GetDirectoryName(input)!;//Uso el null-forgiving operator para indicar al compilador que, dado el contexto de validación previa, el valor no será null
 }
 else if (Directory.Exists(input))
 {
@@ -49,10 +53,11 @@ if (string.IsNullOrWhiteSpace(formatInput))
 }
 
 var formats = formatInput
-    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)//spliteo el string separado por comas en un array removiendo entradas vacías y espacios en blanco
-    .Distinct();
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Distinct();//spliteo el string separado por comas en un array removiendo entradas vacías y espacios en blanco
 
-var outputs = new Dictionary<ISensorWriter, string>();//Diccionario para mapear cada escritor con su path de salida
+var outputs = new Dictionary<ISensorWriter, string>();//Diccionario para mapear cada escritor con su path de salida.
+                                                      //Referencia a un objeto concreto que implementa ISensorWriter
 
 foreach (var format in formats)
 {
